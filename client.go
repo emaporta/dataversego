@@ -26,8 +26,8 @@ func main() {
 
 	fmt.Println(access_token)
 
-	batches := 20
-	batchSize := 500
+	batches := 100
+	batchSize := 100
 
 	for i := 1; i <= batches; i++ {
 		content := fmt.Sprintf("--batch_AAA00%v\n", i)

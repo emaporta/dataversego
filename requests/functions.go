@@ -49,9 +49,10 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 
 		fmt.Printf("Will retry after %v seconds", retrySecsStr)
 
-		retrySecs, err := strconv.ParseInt(retrySecsStr, 2, 0)
+		retrySecs, err := strconv.ParseInt(retrySecsStr, 10, 64)
 		if err != nil {
-			fmt.Println("Error during conversion")
+			fmt.Printf("Error during conversion: %v", err)
+			ch <- resp.StatusCode
 			return
 		}
 		time.Sleep(time.Second * time.Duration(retrySecs))
