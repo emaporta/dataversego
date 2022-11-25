@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,10 +39,24 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 	req.Header.Add("MSCRM.BypassCustomPluginExecution", "true")
 	resp, _ := client.Do(req)
 
-	var test map[string]any
-	json.NewDecoder(resp.Body).Decode(&test)
+	var responseBody map[string]any
+	json.NewDecoder(resp.Body).Decode(&responseBody)
 
-	fmt.Println(test)
+	fmt.Println(responseBody)
+
+	if resp.StatusCode == 429 {
+		retrySecsStr := resp.Header.Get("Retry-After")
+
+		fmt.Printf("Will retry after %v seconds", retrySecsStr)
+
+		retrySecs, err := strconv.ParseInt(retrySecsStr, 2, 0)
+		if err != nil {
+			fmt.Println("Error during conversion")
+			return
+		}
+		time.Sleep(time.Second * time.Duration(retrySecs))
+		go PostBatch(url, auth, content, boundary, ch)
+	}
 
 	ch <- resp.StatusCode
 }
