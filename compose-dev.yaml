@@ -1,0 +1,5 @@
+services:
+  compiler:
+    build: .
+    restart: always
+    tty: true
