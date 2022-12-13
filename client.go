@@ -1,20 +1,20 @@
-package main
+package dataversego
 
 import (
-	"emporta/dataversego/requests"
 	"fmt"
 	"time"
+
+	"github.com/emaporta/dataversego/requests"
 )
 
-func main() {
+var Version string = "0.1.0"
+
+func easyFunction() string {
+	return "Hello world!"
+}
+
+func makeLotRequests() {
 	start := time.Now()
-	// ch := make(chan string)
-	// for _, url := range os.Args[1:] {
-	// 	go requests.MakeRequest(url, ch)
-	// }
-	// for range os.Args[1:] {
-	// 	fmt.Println(<-ch)
-	// }
 
 	ch := make(chan int)
 
