@@ -9,8 +9,9 @@ import (
 
 var Version string = "0.1.0"
 
-func easyFunction() string {
-	return "Hello world!"
+func EasyFunction() (message string) {
+	message = "Hello world!"
+	return
 }
 
 func makeLotRequests() {
