@@ -20,6 +20,7 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 
 	returnAuth.access_token = auth["access_token"].(string)
 	returnAuth.dataverse_url = orgUrl
+	returnAuth.expires_in = auth["expires_in"].(int)
 
 	return
 }
