@@ -14,7 +14,7 @@ func EasyFunction() (message string) {
 	return
 }
 
-func makeLotRequests() {
+func MakeLotRequests() {
 	start := time.Now()
 
 	ch := make(chan int)
