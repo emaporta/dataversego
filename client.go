@@ -2,6 +2,7 @@ package dataversego
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/emaporta/dataversego/requests"
@@ -14,7 +15,27 @@ func EasyFunction() (message string) {
 	return
 }
 
-func MakeLotRequests() {
+func Authenticate(clientid string, secret string, tenantid string, orgUrl string) (returnAuth Authorization) {
+	auth := requests.GetAuthorization(clientid, secret, tenantid, orgUrl)
+
+	returnAuth.access_token = auth["access_token"].(string)
+	returnAuth.dataverse_url = orgUrl
+
+	return
+}
+
+func Retrieve(auth Authorization, tableName string, id string, columns []string, printerror bool) (ent map[string]any) {
+	ch := make(chan int)
+	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.dataverse_url, tableName, id)
+	if columns != nil && len(columns) > 0 {
+		selectStatement := strings.Join(columns[:], ",")
+		url = fmt.Sprintf("%v?$select=%v", url, selectStatement)
+	}
+	ent = requests.GetRequest(url, auth.access_token, ch, printerror)
+	return
+}
+
+func makeLotRequests() {
 	start := time.Now()
 
 	ch := make(chan int)

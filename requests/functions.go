@@ -28,6 +28,26 @@ func GetAuthorization(client string, secret string, tenant string, target string
 	return
 }
 
+func GetRequest(url string, auth string, ch chan<- int, printerror bool) (ent map[string]any) {
+	bearerToken := fmt.Sprintf("Bearer %v", auth)
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Authorization", bearerToken)
+	resp, _ := client.Do(req)
+
+	var responseBody map[string]any
+	json.NewDecoder(resp.Body).Decode(&responseBody)
+
+	if printerror && resp.StatusCode > 300 {
+		fmt.Println(responseBody)
+	} else {
+		ent = responseBody
+	}
+
+	ch <- resp.StatusCode
+	return
+}
+
 func PostBatch(url string, auth string, content string, boundary string, ch chan<- int) {
 
 	contentType := fmt.Sprintf("multipart/mixed;boundary=%v", boundary)
