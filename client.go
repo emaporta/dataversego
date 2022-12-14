@@ -2,6 +2,7 @@ package dataversego
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,9 +19,16 @@ func EasyFunction() (message string) {
 func Authenticate(clientid string, secret string, tenantid string, orgUrl string) (returnAuth Authorization) {
 	auth := requests.GetAuthorization(clientid, secret, tenantid, orgUrl)
 
+	expireSecs := auth["expires_in"].(string)
+	expireSecsInt, err := strconv.ParseInt(expireSecs, 10, 64)
+	if err != nil {
+		fmt.Println("Error during conversion")
+		return
+	}
+
 	returnAuth.access_token = auth["access_token"].(string)
 	returnAuth.dataverse_url = orgUrl
-	returnAuth.expires_in = auth["expires_in"].(int)
+	returnAuth.expires_in = expireSecsInt
 
 	return
 }
