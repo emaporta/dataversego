@@ -28,7 +28,7 @@ func GetAuthorization(client string, secret string, tenant string, target string
 	return
 }
 
-func GetRequest(url string, auth string, printerror bool) (ent map[string]any) {
+func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]any) {
 	bearerToken := fmt.Sprintf("Bearer %v", auth)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
@@ -40,11 +40,9 @@ func GetRequest(url string, auth string, printerror bool) (ent map[string]any) {
 
 	if printerror && resp.StatusCode > 300 {
 		fmt.Println(responseBody)
-	} else {
-		ent = responseBody
 	}
 
-	return
+	ch <- responseBody
 }
 
 func PostBatch(url string, auth string, content string, boundary string, ch chan<- int) {

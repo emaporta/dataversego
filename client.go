@@ -26,12 +26,16 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 }
 
 func Retrieve(auth Authorization, tableName string, id string, columns []string, printerror bool) (ent map[string]any) {
+
+	ch := make(chan map[string]any)
+
 	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.dataverse_url, tableName, id)
 	if columns != nil && len(columns) > 0 {
 		selectStatement := strings.Join(columns[:], ",")
 		url = fmt.Sprintf("%v?$select=%v", url, selectStatement)
 	}
-	ent = requests.GetRequest(url, auth.access_token, printerror)
+	go requests.GetRequest(url, auth.access_token, printerror, ch)
+	ent = <-ch
 	return
 }
 
