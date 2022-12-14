@@ -26,9 +26,9 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 		return
 	}
 
-	returnAuth.access_token = auth["access_token"].(string)
-	returnAuth.dataverse_url = orgUrl
-	returnAuth.expires_in = expireSecsInt
+	returnAuth.Token = auth["access_token"].(string)
+	returnAuth.Url = orgUrl
+	returnAuth.Expiration = expireSecsInt
 
 	return
 }
@@ -37,12 +37,12 @@ func Retrieve(auth Authorization, tableName string, id string, columns []string,
 
 	ch := make(chan map[string]any)
 
-	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.dataverse_url, tableName, id)
+	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
 	if columns != nil && len(columns) > 0 {
 		selectStatement := strings.Join(columns[:], ",")
 		url = fmt.Sprintf("%v?$select=%v", url, selectStatement)
 	}
-	go requests.GetRequest(url, auth.access_token, printerror, ch)
+	go requests.GetRequest(url, auth.Token, printerror, ch)
 	ent = <-ch
 	return
 }
