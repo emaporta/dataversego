@@ -1,6 +1,7 @@
 package dataversego
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,15 +12,15 @@ import (
 
 var Version string = "0.1.0"
 
-func EasyFunction() (message string) {
-	message = "Hello world!"
-	return
-}
+// func EasyFunction() (message string) {
+// 	message = "Hello world!"
+// 	return
+// }
 
 func Authenticate(clientid string, secret string, tenantid string, orgUrl string) (returnAuth Authorization) {
 	auth := requests.GetAuthorization(clientid, secret, tenantid, orgUrl)
 
-	expireSecs := auth["expires_in"].(string)
+	expireSecs := auth["expires_on"].(string)
 	expireSecsInt, err := strconv.ParseInt(expireSecs, 10, 64)
 	if err != nil {
 		fmt.Println("Error during conversion")
@@ -33,17 +34,50 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 	return
 }
 
-func Retrieve(auth Authorization, tableName string, id string, columns []string, printerror bool) (ent map[string]any) {
+func Retrieve(parameter RetrieveSignature) (ent map[string]any, err error) {
 
-	ch := make(chan map[string]any)
-
-	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
-	if columns != nil && len(columns) > 0 {
-		selectStatement := strings.Join(columns[:], ",")
-		url = fmt.Sprintf("%v?$select=%v", url, selectStatement)
+	if !parameter.auth.isSet() {
+		err = errors.New("Empty auth")
+		return
 	}
-	go requests.GetRequest(url, auth.Token, printerror, ch)
-	ent = <-ch
+	if len(parameter.tableName) == 0 {
+		err = errors.New("Empty table")
+		return
+	}
+	if len(parameter.id) == 0 {
+		err = errors.New("Empty Id")
+		return
+	}
+	if parameter.columns != nil && len(parameter.columns) > 0 {
+		selectStatement := strings.Join(parameter.columns[:], ",")
+		ent = retrieve(parameter.auth, parameter.tableName, parameter.id, selectStatement, parameter.printerror)
+	} else {
+		ent = retrieve(parameter.auth, parameter.tableName, parameter.id, parameter.columnsString, parameter.printerror)
+	}
+
+	return
+}
+
+func RetrieveMultiple(parameter RetrieveMultipleSignature) (ent map[string]any, err error) {
+
+	if !parameter.auth.isSet() {
+		err = errors.New("Empty auth")
+		return
+	}
+	if len(parameter.tableName) == 0 {
+		err = errors.New("Empty table")
+		return
+	}
+	selectStatement := parameter.columnsString
+	if parameter.columns != nil && len(parameter.columns) > 0 {
+		selectStatement = strings.Join(parameter.columns[:], ",")
+	}
+	filterStatement := parameter.columnsString
+	if parameter.filter.isSet() {
+		filterStatement = writeFilter(parameter.filter)
+	}
+
+	ent = retrieveMultiple(parameter.auth, parameter.tableName, selectStatement, filterStatement, parameter.printerror)
 	return
 }
 
@@ -88,4 +122,38 @@ func makeLotRequests() {
 	}
 
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+}
+
+// INTERNAL METHODS
+
+func retrieve(auth Authorization, tableName string, id string, columns string, printerror bool) (ent map[string]any) {
+	ch := make(chan map[string]any)
+	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
+	if len(columns) > 0 {
+		url = fmt.Sprintf("%v?$select=%v", url, columns)
+	}
+	go requests.GetRequest(url, auth.Token, printerror, ch)
+	ent = <-ch
+	return
+}
+
+func retrieveMultiple(auth Authorization, tableName string, columns string, filter string, printerror bool) (ent map[string]any) {
+
+	ch := make(chan map[string]any)
+
+	url := fmt.Sprintf("%v/api/data/v9.1/%v", auth.Url, tableName)
+	if len(columns) > 0 {
+		url = fmt.Sprintf("%v?$select=%v", url, columns)
+	}
+	if len(filter) > 0 {
+		if len(columns) > 0 {
+			url += "&"
+		} else {
+			url += "?"
+		}
+		url = fmt.Sprintf("%v$filter=%v", url, filter)
+	}
+	go requests.GetRequest(url, auth.Token, printerror, ch)
+	ent = <-ch
+	return
 }

@@ -3,20 +3,11 @@ package requests
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
-
-func MakeRequest(url string, ch chan<- string) {
-	start := time.Now()
-	resp, _ := http.Get(url)
-	secs := time.Since(start).Seconds()
-	body, _ := ioutil.ReadAll(resp.Body)
-	ch <- fmt.Sprintf("%.2f elapsed with response length: %d %s", secs, len(body), url)
-}
 
 func GetAuthorization(client string, secret string, tenant string, target string) (auth map[string]any) {
 	urlGraph := fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/token", tenant)
@@ -29,6 +20,10 @@ func GetAuthorization(client string, secret string, tenant string, target string
 }
 
 func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]any) {
+	if checkFake(url, ch) {
+		return
+	}
+
 	bearerToken := fmt.Sprintf("Bearer %v", auth)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
@@ -77,4 +72,15 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 	}
 
 	ch <- resp.StatusCode
+}
+
+func checkFake(url string, ch chan<- map[string]any) bool {
+	if strings.HasPrefix(url, "fakeurl") {
+		responseBody := map[string]any{
+			"isfake": true,
+		}
+		ch <- responseBody
+		return true
+	}
+	return false
 }
