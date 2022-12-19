@@ -36,48 +36,48 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 
 func Retrieve(parameter RetrieveSignature) (ent map[string]any, err error) {
 
-	if !parameter.auth.isSet() {
+	if !parameter.Auth.isSet() {
 		err = errors.New("Empty auth")
 		return
 	}
-	if len(parameter.tableName) == 0 {
+	if len(parameter.TableName) == 0 {
 		err = errors.New("Empty table")
 		return
 	}
-	if len(parameter.id) == 0 {
+	if len(parameter.Id) == 0 {
 		err = errors.New("Empty Id")
 		return
 	}
-	if parameter.columns != nil && len(parameter.columns) > 0 {
-		selectStatement := strings.Join(parameter.columns[:], ",")
-		ent = retrieve(parameter.auth, parameter.tableName, parameter.id, selectStatement, parameter.printerror)
-	} else {
-		ent = retrieve(parameter.auth, parameter.tableName, parameter.id, parameter.columnsString, parameter.printerror)
+	selectStatement := parameter.ColumnsString
+	if parameter.Columns != nil && len(parameter.Columns) > 0 {
+		selectStatement = strings.Join(parameter.Columns[:], ",")
 	}
+
+	ent = retrieve(parameter.Auth, parameter.TableName, parameter.Id, selectStatement, parameter.Printerror)
 
 	return
 }
 
 func RetrieveMultiple(parameter RetrieveMultipleSignature) (ent map[string]any, err error) {
 
-	if !parameter.auth.isSet() {
+	if !parameter.Auth.isSet() {
 		err = errors.New("Empty auth")
 		return
 	}
-	if len(parameter.tableName) == 0 {
+	if len(parameter.TableName) == 0 {
 		err = errors.New("Empty table")
 		return
 	}
-	selectStatement := parameter.columnsString
-	if parameter.columns != nil && len(parameter.columns) > 0 {
-		selectStatement = strings.Join(parameter.columns[:], ",")
+	selectStatement := parameter.ColumnsString
+	if parameter.Columns != nil && len(parameter.Columns) > 0 {
+		selectStatement = strings.Join(parameter.Columns[:], ",")
 	}
-	filterStatement := parameter.columnsString
-	if parameter.filter.isSet() {
-		filterStatement = writeFilter(parameter.filter)
+	filterStatement := parameter.FilterString
+	if parameter.Filter.isSet() {
+		filterStatement = writeFilter(parameter.Filter)
 	}
 
-	ent = retrieveMultiple(parameter.auth, parameter.tableName, selectStatement, filterStatement, parameter.printerror)
+	ent = retrieveMultiple(parameter.Auth, parameter.TableName, selectStatement, filterStatement, parameter.Printerror)
 	return
 }
 

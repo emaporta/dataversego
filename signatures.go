@@ -1,20 +1,20 @@
 package dataversego
 
 type RetrieveSignature struct {
-	auth          Authorization
-	tableName     string
-	id            string
-	columns       []string
-	columnsString string
-	printerror    bool
+	Auth          Authorization
+	TableName     string
+	Id            string
+	Columns       []string
+	ColumnsString string
+	Printerror    bool
 }
 
 type RetrieveMultipleSignature struct {
-	auth          Authorization
-	tableName     string
-	columns       []string
-	columnsString string
-	filter        Filter
-	filterString  string
-	printerror    bool
+	Auth          Authorization
+	TableName     string
+	Columns       []string
+	ColumnsString string
+	Filter        Filter
+	FilterString  string
+	Printerror    bool
 }

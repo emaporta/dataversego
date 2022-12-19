@@ -42,11 +42,11 @@ func TestIsSetFilter(t *testing.T) {
 
 func TestRetrieve(t *testing.T) {
 	retrieveParams := RetrieveSignature{
-		auth:          Authorization{Token: "AAAA", Url: "fakeurl", Expiration: 123},
-		tableName:     "aaaa",
-		id:            "123",
-		columnsString: "",
-		printerror:    false,
+		Auth:          Authorization{Token: "AAAA", Url: "fakeurl", Expiration: 123},
+		TableName:     "aaaa",
+		Id:            "123",
+		ColumnsString: "",
+		Printerror:    false,
 	}
 	ent, err := Retrieve(retrieveParams)
 	if err != nil {
