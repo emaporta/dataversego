@@ -24,6 +24,19 @@ func TestFilterFunction(t *testing.T) {
 	}
 }
 
+func TestFilterOnlyKey(t *testing.T) {
+	filterString := "(startswith(fullname,'K') or startswith(fullname,'C'))"
+
+	f := Filter{
+		Kind:       "or",
+		Conditions: []Condition{{Key: "startswith(fullname,'K')"}, {Key: "startswith(fullname,'C')"}},
+	}
+	msg := writeFilter(f)
+	if strings.Compare(filterString, msg) != 0 {
+		t.Fatalf(`writeFilter = %q, want match for %#q`, msg, filterString)
+	}
+}
+
 func TestIsSetAuth(t *testing.T) {
 	auth := Authorization{}
 	if auth.isSet() != false {
@@ -49,6 +62,28 @@ func TestRetrieve(t *testing.T) {
 		Printerror:    false,
 	}
 	ent, err := Retrieve(retrieveParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if ent["isfake"] != true {
+		t.Fatalf("Not fake, something went wrong: %v", ent)
+	}
+}
+
+func TestRetrieveMultiple(t *testing.T) {
+	filter := Filter{
+		Kind:       "or",
+		Conditions: []Condition{{Key: "startswith(fullname,'K')"}, {Key: "startswith(fullname,'C')"}},
+	}
+	columns := []string{"fullname"}
+
+	retrieveParams := RetrieveMultipleSignature{
+		Auth:      Authorization{Token: "AAAA", Url: "fakeurl", Expiration: 123},
+		TableName: "aaaa",
+		Columns:   columns,
+		Filter:    filter,
+	}
+	ent, err := RetrieveMultiple(retrieveParams)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

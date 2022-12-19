@@ -21,7 +21,11 @@ func writeFilter(filter Filter) (stringFilter string) {
 			if i != 0 {
 				stringFilter += fmt.Sprintf(" %v ", filter.Kind)
 			}
-			stringFilter += fmt.Sprintf("%v %v %v", filter.Conditions[i].Key, filter.Conditions[i].Condition, filter.Conditions[i].Value)
+			if len(filter.Conditions[i].Condition) > 0 {
+				stringFilter += fmt.Sprintf("%v %v %v", filter.Conditions[i].Key, filter.Conditions[i].Condition, filter.Conditions[i].Value)
+			} else {
+				stringFilter += fmt.Sprintf("%v", filter.Conditions[i].Key)
+			}
 		}
 	}
 	stringFilter += ")"

@@ -76,6 +76,7 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 
 func checkFake(url string, ch chan<- map[string]any) bool {
 	if strings.HasPrefix(url, "fakeurl") {
+		fmt.Printf(url)
 		responseBody := map[string]any{
 			"isfake": true,
 		}
