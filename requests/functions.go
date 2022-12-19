@@ -34,7 +34,8 @@ func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]a
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 
 	if printerror && resp.StatusCode > 300 {
-		fmt.Println(responseBody)
+		fmt.Printf("Request url: %v", url)
+		fmt.Printf("Statuscode: %v - %v", resp.StatusCode, responseBody)
 	}
 
 	ch <- responseBody
