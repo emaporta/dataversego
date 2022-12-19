@@ -3,6 +3,7 @@ package dataversego
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -128,11 +129,11 @@ func makeLotRequests() {
 
 func retrieve(auth Authorization, tableName string, id string, columns string, printerror bool) (ent map[string]any) {
 	ch := make(chan map[string]any)
-	url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
+	_url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
 	if len(columns) > 0 {
-		url = fmt.Sprintf("%v?$select=%v", url, columns)
+		_url = fmt.Sprintf("%v?$select=%v", _url, url.QueryEscape(columns))
 	}
-	go requests.GetRequest(url, auth.Token, printerror, ch)
+	go requests.GetRequest(_url, auth.Token, printerror, ch)
 	ent = <-ch
 	return
 }
@@ -141,19 +142,19 @@ func retrieveMultiple(auth Authorization, tableName string, columns string, filt
 
 	ch := make(chan map[string]any)
 
-	url := fmt.Sprintf("%v/api/data/v9.1/%v", auth.Url, tableName)
+	_url := fmt.Sprintf("%v/api/data/v9.1/%v", auth.Url, tableName)
 	if len(columns) > 0 {
-		url = fmt.Sprintf("%v?$select=%v", url, columns)
+		_url = fmt.Sprintf("%v?$select=%v", _url, url.QueryEscape(columns))
 	}
 	if len(filter) > 0 {
 		if len(columns) > 0 {
-			url += "&"
+			_url += "&"
 		} else {
-			url += "?"
+			_url += "?"
 		}
-		url = fmt.Sprintf("%v$filter=%v", url, filter)
+		_url = fmt.Sprintf("%v$filter=%v", _url, url.QueryEscape(filter))
 	}
-	go requests.GetRequest(url, auth.Token, printerror, ch)
+	go requests.GetRequest(_url, auth.Token, printerror, ch)
 	ent = <-ch
 	return
 }
