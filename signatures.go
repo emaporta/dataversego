@@ -35,3 +35,18 @@ type RetrieveMultipleSignature struct {
 	FilterString  string
 	Printerror    bool
 }
+
+// The 'CreateUpdateSignature' struct represents the signature of a 'CreateUpdate' function.
+// It contains the following fields:
+//   - Auth: a struct containing authentication information
+//   - TableName: the name of the table to create or update the entry in
+//   - Id: the ID of the entry to be updated
+//   - Row: a map of strings to interface{} values representing the data for the entry
+//   - Printerror: a boolean value indicating whether or not to print errors
+type CreateUpdateSignature struct {
+	Auth       Authorization
+	TableName  string
+	Id         string
+	Row        map[string]any
+	Printerror bool
+}

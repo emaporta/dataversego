@@ -89,7 +89,7 @@ func Retrieve(parameter RetrieveSignature) (ent map[string]any, err error) {
 		selectStatement = strings.Join(parameter.Columns[:], ",")
 	}
 
-	ent = retrieve(parameter.Auth, parameter.TableName, parameter.Id, selectStatement, parameter.Printerror)
+	ent, err = retrieve(parameter.Auth, parameter.TableName, parameter.Id, selectStatement, parameter.Printerror)
 
 	return
 }
@@ -137,7 +137,55 @@ func RetrieveMultiple(parameter RetrieveMultipleSignature) (ent map[string]any, 
 		filterStatement = writeFilter(parameter.Filter)
 	}
 
-	ent = retrieveMultiple(parameter.Auth, parameter.TableName, selectStatement, filterStatement, parameter.Printerror)
+	ent, err = retrieveMultiple(parameter.Auth, parameter.TableName, selectStatement, filterStatement, parameter.Printerror)
+	return
+}
+
+// CreateUpdate updates an existing record in the specified table or creates a new record if the Id is not set.
+//
+// The function takes a CreateUpdateSignature struct as a parameter, which contains the following fields:
+//   - Auth: an Authorization struct that contains the authentication token and the URL of the target organization.
+//   - TableName: a string that specifies the name of the table to update or create a record in.
+//   - Id: a string that specifies the ID of the record to update. If the Id is not set, a new record will be created.
+//   - Row: a map of string to any that contains the data to update or create.
+//   - Printerror: a boolean value that specifies whether to print any error messages to the console.
+//
+// The function returns the ID of the updated or created record as a string and an error value.
+//
+// Example:
+//
+//	ent, err := CreateUpdate(CreateUpdateSignature{
+//	  Auth: Auth{Username: "user", Password: "pass"},
+//	  TableName: "users",
+//	  Row: map[string]interface{}{
+//			"name": "My Account",
+//			"websiteurl": "https...",
+//		},
+//	})
+//	if err != nil {
+//	  log.Fatal(err)
+//	}
+//	fmt.Println(ent)
+func CreateUpdate(parameter CreateUpdateSignature) (id string, err error) {
+	// Check if the auth is set
+	if !parameter.Auth.isSet() {
+		err = errors.New("Empty auth")
+		return
+	}
+
+	// Check if the Id is set
+	isUpdate := false
+	if !(len(parameter.Id) > 0) {
+		isUpdate = true
+	}
+
+	// If the Id is set, update the record. Otherwise, create a new record.
+	if isUpdate {
+		id = parameter.Id
+		err = update(parameter.Auth, parameter.TableName, parameter.Id, parameter.Row, parameter.Printerror)
+	} else {
+		id, err = create(parameter.Auth, parameter.TableName, parameter.Row, parameter.Printerror)
+	}
 	return
 }
 
@@ -186,20 +234,28 @@ func makeLotRequests() {
 
 // INTERNAL METHODS
 
-func retrieve(auth Authorization, tableName string, id string, columns string, printerror bool) (ent map[string]any) {
+func retrieve(auth Authorization, tableName string, id string, columns string, printerror bool) (ent map[string]any, err error) {
+
 	ch := make(chan map[string]any)
+	chErr := make(chan error)
+
 	_url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
 	if len(columns) > 0 {
 		_url = fmt.Sprintf("%v?$select=%v", _url, url.QueryEscape(columns))
 	}
-	go requests.GetRequest(_url, auth.Token, printerror, ch)
-	ent = <-ch
+	go requests.GetRequest(_url, auth.Token, printerror, ch, chErr)
+
+	ent, err = <-ch, <-chErr
+
+	close(ch)
+	close(chErr)
 	return
 }
 
-func retrieveMultiple(auth Authorization, tableName string, columns string, filter string, printerror bool) (ent map[string]any) {
+func retrieveMultiple(auth Authorization, tableName string, columns string, filter string, printerror bool) (ent map[string]any, err error) {
 
 	ch := make(chan map[string]any)
+	chErr := make(chan error)
 
 	_url := fmt.Sprintf("%v/api/data/v9.1/%v", auth.Url, tableName)
 	if len(columns) > 0 {
@@ -213,7 +269,46 @@ func retrieveMultiple(auth Authorization, tableName string, columns string, filt
 		}
 		_url = fmt.Sprintf("%v$filter=%v", _url, url.QueryEscape(filter))
 	}
-	go requests.GetRequest(_url, auth.Token, printerror, ch)
-	ent = <-ch
+	go requests.GetRequest(_url, auth.Token, printerror, ch, chErr)
+
+	ent, err = <-ch, <-chErr
+
+	close(ch)
+	close(chErr)
+
+	return
+}
+
+func update(auth Authorization, tableName string, id string, row map[string]any, printerror bool) (err error) {
+	ch := make(chan map[string]any)
+	chErr := make(chan error)
+
+	_url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
+
+	go requests.PatchRequest(_url, auth.Token, row, printerror, ch, chErr)
+
+	err = <-chErr
+
+	close(ch)
+	close(chErr)
+
+	return
+}
+
+func create(auth Authorization, tableName string, row map[string]any, printerror bool) (id string, err error) {
+	ch := make(chan map[string]any)
+	chErr := make(chan error)
+
+	_url := fmt.Sprintf("%v/api/data/v9.1/%v", auth.Url, tableName)
+
+	go requests.PostRequest(_url, auth.Token, row, printerror, ch, chErr)
+
+	ent := <-ch
+	err = <-chErr
+	id = ent["id"].(string)
+
+	close(ch)
+	close(chErr)
+
 	return
 }
