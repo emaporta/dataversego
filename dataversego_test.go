@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// Test helper function for filters with a complex condition
 func TestFilterFunction(t *testing.T) {
 	filterString := "((cond1 eq a or cond2 eq b) and cond3 eq b)"
 	fInternal := Filter{

@@ -9,6 +9,20 @@ import (
 	"time"
 )
 
+// GetAuthorization retrieves an authorization token for a given client ID, secret, tenant ID, and resource URL.
+//
+// It takes four arguments:
+//   - client: a string representing the client ID
+//   - secret: a string representing the secret
+//   - tenant: a string representing the tenant ID
+//   - target: a string representing the resource URL
+//
+// The return value is a map of strings to interface{} values representing the authorization information.
+//
+// Example:
+//
+//	auth := GetAuthorization("clientid", "secret", "tenantid", "https://myresource.com")
+//	fmt.Println(auth["access_token"])
 func GetAuthorization(client string, secret string, tenant string, target string) (auth map[string]any) {
 	urlGraph := fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/token", tenant)
 	body := fmt.Sprintf("grant_type=client_credentials&client_id=%v&client_secret=%v&resource=%v", client, secret, target)
@@ -19,6 +33,22 @@ func GetAuthorization(client string, secret string, tenant string, target string
 	return
 }
 
+// GetRequest sends a GET request to a given URL with a given authorization token.
+//
+// It takes four arguments:
+//   - url: a string representing the URL to send the request to
+//   - auth: a string representing the authorization token to include in the request
+//   - printerror: a boolean value indicating whether or not to print errors
+//   - ch: a channel to send the response body to as a map of strings to interface{} values
+//
+// The function does not return any value.
+//
+// Example:
+//
+//	ch := make(chan map[string]any)
+//	go GetRequest("https://myresource.com/data", "authtoken", true, ch)
+//	resp := <-ch
+//	fmt.Println(resp)
 func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]any) {
 	if checkFake(url, ch) {
 		return
@@ -34,7 +64,7 @@ func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]a
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 
 	if printerror && resp.StatusCode > 300 {
-		fmt.Printf("Request url: %v", url)
+		fmt.Printf("Request url: %v")
 		fmt.Printf("Statuscode: %v - %v", resp.StatusCode, responseBody)
 	}
 
@@ -75,6 +105,20 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 	ch <- resp.StatusCode
 }
 
+// checkFake checks if a given URL is a "fake" URL.
+//
+// It takes two arguments:
+//   - url: a string representing the URL to check
+//   - ch: a channel to send a response to if the URL is fake
+//
+// The return value is a boolean value indicating whether or not the URL is fake.
+//
+// Example:
+//
+//	isFake := checkFake("fakeurl.com", ch)
+//	if isFake {
+//	  fmt.Println("URL is fake")
+//	}
 func checkFake(url string, ch chan<- map[string]any) bool {
 	if strings.HasPrefix(url, "fakeurl") {
 		fmt.Printf(url)

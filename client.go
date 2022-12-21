@@ -13,11 +13,23 @@ import (
 
 var Version string = "0.1.0"
 
-// func EasyFunction() (message string) {
-// 	message = "Hello world!"
-// 	return
-// }
-
+// Authenticate retrieves an authorization token for a given client ID, secret, tenant ID, and organization URL.
+//
+// It takes four arguments:
+//   - clientid: a string representing the client ID
+//   - secret: a string representing the secret
+//   - tenantid: a string representing the tenant ID
+//   - orgUrl: a string representing the organization URL
+//
+// The return value is a struct of type 'Authorization', which contains the following fields:
+//   - Token: a string representing the authorization token
+//   - Url: a string representing the organization URL
+//   - Expiration: an int64 representing the expiration time of the token in Unix timestamp format
+//
+// Example:
+//
+//	auth := Authenticate("clientid", "secret", "tenantid", "https://myorg.crm.dynamics.com")
+//	fmt.Println(auth.Token)
 func Authenticate(clientid string, secret string, tenantid string, orgUrl string) (returnAuth Authorization) {
 	auth := requests.GetAuthorization(clientid, secret, tenantid, orgUrl)
 
@@ -35,6 +47,29 @@ func Authenticate(clientid string, secret string, tenantid string, orgUrl string
 	return
 }
 
+// Retrieve retrieves an entry from a dataverse table based on a given ID.
+//
+// It takes a single argument of type 'RetrieveSignature', which is a struct containing the following fields:
+//   - Auth: a struct containing authentication information
+//   - TableName: the name of the table to retrieve the entry from
+//   - Id: the ID of the entry to be retrieved
+//   - Columns: a slice of strings representing the columns to be retrieved
+//   - ColumnsString: a string representing the columns to be retrieved (comma separated)
+//   - Printerror: a boolean value indicating whether or not to print errors
+//
+// The return value is a map of strings to interface{} values representing the retrieved entry, and an error value, which will be nil if the function completed successfully.
+//
+// Example:
+//
+//	ent, err := Retrieve(RetrieveSignature{
+//	  Auth: Auth{Token: "Token", Url: "https://url.crm.dynamics.com"},
+//	  TableName: "users",
+//	  Id: "123",
+//	})
+//	if err != nil {
+//	  log.Fatal(err)
+//	}
+//	fmt.Println(ent)
 func Retrieve(parameter RetrieveSignature) (ent map[string]any, err error) {
 
 	if !parameter.Auth.isSet() {
@@ -59,6 +94,30 @@ func Retrieve(parameter RetrieveSignature) (ent map[string]any, err error) {
 	return
 }
 
+// RetrieveMultiple retrieves multiple entries from a dataverse table based on a given filter.
+//
+// It takes a single argument of type 'RetrieveMultipleSignature', which is a struct containing the following fields:
+//   - Auth: a struct containing authentication information
+//   - TableName: the name of the table to retrieve the entries from
+//   - Columns: a slice of strings representing the columns to be retrieved
+//   - ColumnsString: a string representing the columns to be retrieved
+//   - Filter: a struct containing filter criteria for the entries to be retrieved
+//   - FilterString: a string representing the filter criteria
+//   - Printerror: a boolean value indicating whether or not to print errors
+//
+// The return value is a map of strings to interface{} values representing the retrieved entries, and an error value, which will be nil if the function completed successfully.
+//
+// Example:
+//
+//	ent, err := RetrieveMultiple(RetrieveMultipleSignature{
+//	  Auth: Auth{Username: "user", Password: "pass"},
+//	  TableName: "users",
+//	  Filter: Filter{},
+//	})
+//	if err != nil {
+//	  log.Fatal(err)
+//	}
+//	fmt.Println(ent)
 func RetrieveMultiple(parameter RetrieveMultipleSignature) (ent map[string]any, err error) {
 
 	if !parameter.Auth.isSet() {

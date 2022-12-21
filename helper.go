@@ -2,6 +2,25 @@ package dataversego
 
 import "fmt"
 
+// writeFilter converts a 'Filter' struct into a string representation.
+//
+// It takes a single argument of type 'Filter', which is a struct containing the following fields:
+//   - Kind: a string representing the kind of filter (e.g. "and", "or")
+//   - Conditions: a slice of 'Condition' structs representing the individual conditions of the filter
+//   - Filters: a slice of 'Filter' structs representing nested filters
+//
+// The return value is a string representing the filter.
+//
+// Example:
+//
+//	filterStr := writeFilter(Filter{
+//	  Kind: "and",
+//	  Conditions: []Condition{
+//	    {Key: "name", Value: "John", Condition: "eq"},
+//	    {Key: "age", Value: "30", Condition: "gt"},
+//	  },
+//	})
+//	fmt.Println(filterStr)
 func writeFilter(filter Filter) (stringFilter string) {
 
 	stringFilter += "("
