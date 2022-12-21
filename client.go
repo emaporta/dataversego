@@ -175,7 +175,7 @@ func CreateUpdate(parameter CreateUpdateSignature) (id string, err error) {
 
 	// Check if the Id is set
 	isUpdate := false
-	if !(len(parameter.Id) > 0) {
+	if len(parameter.Id) > 0 {
 		isUpdate = true
 	}
 
