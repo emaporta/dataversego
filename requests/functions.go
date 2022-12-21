@@ -122,6 +122,7 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(jsonStr))
 	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Content-Type", "application/json")
 	resp, _ := client.Do(req)
 
 	// Decode the response body into a map[string]any.
@@ -186,6 +187,7 @@ func PatchRequest(url string, auth string, row map[string]any, printerror bool, 
 	client := &http.Client{}
 	req, _ := http.NewRequest("PATCH", url, bytes.NewReader(jsonStr))
 	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Content-Type", "application/json")
 	resp, _ := client.Do(req)
 
 	var responseBody map[string]any
