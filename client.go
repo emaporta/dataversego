@@ -247,8 +247,6 @@ func retrieve(auth Authorization, tableName string, id string, columns string, p
 
 	ent, err = <-ch, <-chErr
 
-	close(ch)
-	close(chErr)
 	return
 }
 
@@ -273,9 +271,6 @@ func retrieveMultiple(auth Authorization, tableName string, columns string, filt
 
 	ent, err = <-ch, <-chErr
 
-	close(ch)
-	close(chErr)
-
 	return
 }
 
@@ -288,9 +283,6 @@ func update(auth Authorization, tableName string, id string, row map[string]any,
 	go requests.PatchRequest(_url, auth.Token, row, printerror, ch, chErr)
 
 	err = <-chErr
-
-	close(ch)
-	close(chErr)
 
 	return
 }
@@ -306,9 +298,6 @@ func create(auth Authorization, tableName string, row map[string]any, printerror
 	ent := <-ch
 	err = <-chErr
 	id = ent["id"].(string)
-
-	close(ch)
-	close(chErr)
 
 	return
 }

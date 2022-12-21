@@ -59,8 +59,6 @@ func GetAuthorization(client string, secret string, tenant string, target string
 func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]any, chErr chan<- error) {
 	if checkFake(url, ch) {
 		chErr <- nil
-		close(ch)
-		close(chErr)
 		return
 	}
 
@@ -86,8 +84,6 @@ func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]a
 		ch <- responseBody
 		chErr <- nil
 	}
-	close(ch)
-	close(chErr)
 }
 
 // GetRequest sends a POST request to the specified URL with the given authorization header and returns the
@@ -107,8 +103,6 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 	// Check if the request is a "fake" url and handle it accordingly.
 	if checkFake(url, ch) {
 		chErr <- nil
-		close(ch)
-		close(chErr)
 		return
 	}
 
@@ -157,8 +151,6 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 		}
 		chErr <- nil
 	}
-	close(ch)
-	close(chErr)
 }
 
 // GetRequest sends a PATCH request to the specified URL with the given authorization header and returns the
@@ -177,8 +169,6 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 func PatchRequest(url string, auth string, row map[string]any, printerror bool, ch chan<- map[string]any, chErr chan<- error) {
 	if checkFake(url, ch) {
 		chErr <- nil
-		close(ch)
-		close(chErr)
 		return
 	}
 
@@ -221,8 +211,6 @@ func PatchRequest(url string, auth string, row map[string]any, printerror bool, 
 		}
 		chErr <- nil
 	}
-	close(ch)
-	close(chErr)
 }
 
 func PostBatch(url string, auth string, content string, boundary string, ch chan<- int) {
