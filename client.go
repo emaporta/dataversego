@@ -181,11 +181,50 @@ func CreateUpdate(parameter CreateUpdateSignature) (id string, err error) {
 
 	// If the Id is set, update the record. Otherwise, create a new record.
 	if isUpdate {
-		id = parameter.Id
-		err = update(parameter.Auth, parameter.TableName, parameter.Id, parameter.Row, parameter.Printerror)
+		id, err = update(parameter.Auth, parameter.TableName, parameter.Id, parameter.Row, parameter.Printerror)
 	} else {
 		id, err = create(parameter.Auth, parameter.TableName, parameter.Row, parameter.Printerror)
 	}
+	return
+}
+
+// Delete Deletes an entry from a dataverse table based on a given ID.
+//
+// It takes a single argument of type 'DeleteSignature', which is a struct containing the following fields:
+//   - Auth: a struct containing authentication information
+//   - TableName: the name of the table to Delete the entry from
+//   - Id: the ID of the entry to be Deleted
+//   - Printerror: a boolean value indicating whether or not to print errors
+//
+// The return value is an error value, which will be nil if the function completed successfully.
+//
+// Example:
+//
+//	err := Delete(DeleteSignature{
+//	  Auth: Auth{Token: "Token", Url: "https://url.crm.dynamics.com"},
+//	  TableName: "users",
+//	  Id: "123",
+//	})
+//	if err != nil {
+//	  log.Fatal(err)
+//	}
+func Delete(parameter DeleteSignature) (err error) {
+
+	if !parameter.Auth.isSet() {
+		err = errors.New("Empty auth")
+		return
+	}
+	if len(parameter.TableName) == 0 {
+		err = errors.New("Empty table")
+		return
+	}
+	if len(parameter.Id) == 0 {
+		err = errors.New("Empty Id")
+		return
+	}
+
+	err = delete(parameter.Auth, parameter.TableName, parameter.Id, parameter.Printerror)
+
 	return
 }
 
@@ -274,7 +313,7 @@ func retrieveMultiple(auth Authorization, tableName string, columns string, filt
 	return
 }
 
-func update(auth Authorization, tableName string, id string, row map[string]any, printerror bool) (err error) {
+func update(auth Authorization, tableName string, id string, row map[string]any, printerror bool) (Id string, err error) {
 	ch := make(chan map[string]any)
 	chErr := make(chan error)
 
@@ -282,6 +321,8 @@ func update(auth Authorization, tableName string, id string, row map[string]any,
 
 	go requests.PatchRequest(_url, auth.Token, row, printerror, ch, chErr)
 
+	ent := <-ch
+	Id = ent["id"].(string)
 	err = <-chErr
 
 	return
@@ -298,6 +339,18 @@ func create(auth Authorization, tableName string, row map[string]any, printerror
 	ent := <-ch
 	err = <-chErr
 	id = ent["id"].(string)
+
+	return
+}
+
+func delete(auth Authorization, tableName string, id string, printerror bool) (err error) {
+
+	chErr := make(chan error)
+
+	_url := fmt.Sprintf("%v/api/data/v9.1/%v(%v)", auth.Url, tableName, id)
+	go requests.DeleteRequest(_url, auth.Token, printerror, chErr)
+
+	err = <-chErr
 
 	return
 }

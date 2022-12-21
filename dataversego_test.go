@@ -1,6 +1,7 @@
 package dataversego
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -89,4 +90,118 @@ func TestRetrieveMultiple(t *testing.T) {
 	if ent["isfake"] != true {
 		t.Fatalf("Not fake, something went wrong: %v", ent)
 	}
+}
+
+func TestCreate(t *testing.T) {
+
+	auth := Authenticate(conf_appid, conf_secret, conf_tenant, conf_url)
+
+	createParams := CreateUpdateSignature{
+		Auth:      auth,
+		TableName: "contacts",
+		Row: map[string]any{
+			"firstname": "test",
+			"lastname":  "fromgo",
+		},
+		Printerror: true,
+	}
+
+	id, err := CreateUpdate(createParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	re := regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
+	// Find the regular expression in the string
+	matches := re.FindString(id)
+	if !(len(matches) > 0) {
+		t.Fatalf("Not valid ID: %v", id)
+	}
+
+	deleteParams := DeleteSignature{
+		Auth:       auth,
+		TableName:  "contacts",
+		Id:         id,
+		Printerror: true,
+	}
+
+	err = Delete(deleteParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestUpdate(t *testing.T) {
+
+	auth := Authenticate(conf_appid, conf_secret, conf_tenant, conf_url)
+
+	createParams := CreateUpdateSignature{
+		Auth:      auth,
+		TableName: "contacts",
+		Row: map[string]any{
+			"firstname": "test",
+			"lastname":  "fromgo",
+		},
+		Printerror: true,
+	}
+
+	id, err := CreateUpdate(createParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	re := regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
+	// Find the regular expression in the string
+	matches := re.FindString(id)
+	if !(len(matches) > 0) {
+		t.Fatalf("Not valid ID: %v", id)
+	}
+
+	updateParams := CreateUpdateSignature{
+		Auth:      auth,
+		TableName: "contacts",
+		Row: map[string]any{
+			"lastname": "fromgo_updated",
+		},
+		Id:         id,
+		Printerror: true,
+	}
+
+	id, err = CreateUpdate(updateParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	// Find the regular expression in the string
+	matches = re.FindString(id)
+	if !(len(matches) > 0) {
+		t.Fatalf("Not valid ID: %v", id)
+	}
+
+	deleteParams := DeleteSignature{
+		Auth:       auth,
+		TableName:  "contacts",
+		Id:         id,
+		Printerror: true,
+	}
+
+	err = Delete(deleteParams)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+
+	auth := Authenticate(conf_appid, conf_secret, conf_tenant, conf_url)
+
+	deleteParams := DeleteSignature{
+		Auth:       auth,
+		TableName:  "contacts",
+		Id:         "3b33503f-7481-ed11-81ac-00224888b9a9",
+		Printerror: true,
+	}
+
+	err := Delete(deleteParams)
+	if err == nil {
+		t.Fatalf("%v", "Expected error!")
+	}
+
 }

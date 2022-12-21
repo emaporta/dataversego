@@ -57,7 +57,11 @@ func GetAuthorization(client string, secret string, tenant string, target string
 //	resp := <-ch
 //	fmt.Println(resp)
 func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]any, chErr chan<- error) {
-	if checkFake(url, ch) {
+	if checkFake(url) {
+		responseBody := map[string]any{
+			"isfake": true,
+		}
+		ch <- responseBody
 		chErr <- nil
 		return
 	}
@@ -101,7 +105,11 @@ func GetRequest(url string, auth string, printerror bool, ch chan<- map[string]a
 //   - chErr: a channel of type chan<- error to send any errors through.
 func PostRequest(url string, auth string, row map[string]any, printerror bool, ch chan<- map[string]any, chErr chan<- error) {
 	// Check if the request is a "fake" url and handle it accordingly.
-	if checkFake(url, ch) {
+	if checkFake(url) {
+		responseBody := map[string]any{
+			"isfake": true,
+		}
+		ch <- responseBody
 		chErr <- nil
 		return
 	}
@@ -141,7 +149,7 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 	} else {
 		// Otherwise, extract the entity URL and ID from the response header and
 		// send the response through the `ch` channel.
-		entityUrl := resp.Header["OData-EntityId"][0]
+		entityUrl := resp.Header["Odata-Entityid"][0]
 		re := regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 		// Find the regular expression in the string
 		matches := re.FindString(entityUrl)
@@ -168,7 +176,11 @@ func PostRequest(url string, auth string, row map[string]any, printerror bool, c
 //   - ch: a channel of type chan<- map[string]any to send the response body through.
 //   - chErr: a channel of type chan<- error to send any errors through.
 func PatchRequest(url string, auth string, row map[string]any, printerror bool, ch chan<- map[string]any, chErr chan<- error) {
-	if checkFake(url, ch) {
+	if checkFake(url) {
+		responseBody := map[string]any{
+			"isfake": true,
+		}
+		ch <- responseBody
 		chErr <- nil
 		return
 	}
@@ -215,6 +227,54 @@ func PatchRequest(url string, auth string, row map[string]any, printerror bool, 
 	}
 }
 
+// GetRequest sends a GET request to the specified URL with the given authorization header and returns the
+// response body as a map[string]any value through the given channel. If the printerror parameter is true
+// and the response has a status code greater than 300, it will also print the request URL and the status
+// code and response body. If the URL starts with "fakeurl", it will send a "fake" response through the
+// channel and return without making an actual HTTP request.
+//
+// The function takes the following parameters:
+//   - url: a string value representing the URL to send the request to.
+//   - auth: a string value representing the authorization header to include in the request.
+//   - printerror: a boolean value indicating whether to print errors.
+//   - ch: a channel of type chan<- map[string]any to send the response body through.
+//   - chErr: a channel of type chan<- error to send any errors through.
+//
+// Example:
+//
+//	ch := make(chan map[string]any)
+//	chErr := make(error)
+//	go GetRequest("https://myresource.com/data", "authtoken", true, ch, chErr)
+//	resp := <-ch
+//	fmt.Println(resp)
+func DeleteRequest(url string, auth string, printerror bool, chErr chan<- error) {
+	if checkFake(url) {
+		chErr <- nil
+		return
+	}
+
+	bearerToken := fmt.Sprintf("Bearer %v", auth)
+	client := &http.Client{}
+	req, _ := http.NewRequest("DELETE", url, nil)
+	req.Header.Add("Authorization", bearerToken)
+	resp, _ := client.Do(req)
+
+	var responseBody map[string]any
+	json.NewDecoder(resp.Body).Decode(&responseBody)
+
+	// If the request returned an error status code and `printerror` is true,
+	// print the error message to the console and send the error through the `chErr` channel.
+	if resp.StatusCode > 300 {
+		if printerror {
+			fmt.Printf("Request url: %v", url)
+			fmt.Printf("Statuscode: %v - %v", resp.StatusCode, responseBody)
+		}
+		chErr <- errors.New(fmt.Sprintf("HTTP ERROR %v - MESSAGE: %v", resp.StatusCode, responseBody))
+	} else {
+		chErr <- nil
+	}
+}
+
 func PostBatch(url string, auth string, content string, boundary string, ch chan<- int) {
 
 	contentType := fmt.Sprintf("multipart/mixed;boundary=%v", boundary)
@@ -253,23 +313,18 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 //
 // It takes two arguments:
 //   - url: a string representing the URL to check
-//   - ch: a channel to send a response to if the URL is fake
 //
 // The return value is a boolean value indicating whether or not the URL is fake.
 //
 // Example:
 //
-//	isFake := checkFake("fakeurl.com", ch)
+//	isFake := checkFake("fakeurl.com")
 //	if isFake {
 //	  fmt.Println("URL is fake")
 //	}
-func checkFake(url string, ch chan<- map[string]any) bool {
+func checkFake(url string) bool {
 	if strings.HasPrefix(url, "fakeurl") {
 		fmt.Printf(url)
-		responseBody := map[string]any{
-			"isfake": true,
-		}
-		ch <- responseBody
 		return true
 	}
 	return false

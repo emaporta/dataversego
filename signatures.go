@@ -50,3 +50,16 @@ type CreateUpdateSignature struct {
 	Row        map[string]any
 	Printerror bool
 }
+
+// The 'DeleteSignature' struct represents the signature of a 'Delete' function.
+// It contains the following fields:
+//   - Auth: a struct containing authentication information
+//   - TableName: the name of the table to Delete the entry from
+//   - Id: the ID of the entry to be Deleted
+//   - Printerror: a boolean value indicating whether or not to print errors
+type DeleteSignature struct {
+	Auth       Authorization
+	TableName  string
+	Id         string
+	Printerror bool
+}
