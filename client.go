@@ -26,7 +26,7 @@ var Version string = "0.1.0"
 //   - Url: a string representing the organization URL
 //   - Expiration: an int64 representing the expiration time of the token in Unix timestamp format
 //
-// Example:
+// Example: 
 //
 //	auth := Authenticate("clientid", "secret", "tenantid", "https://myorg.crm.dynamics.com")
 //	fmt.Println(auth.Token)
