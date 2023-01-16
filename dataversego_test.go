@@ -1,6 +1,7 @@
 package dataversego
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -204,4 +205,34 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("%v", "Expected error!")
 	}
 
+}
+
+func TestBatch(t *testing.T) {
+	auth := Authenticate(conf_appid, conf_secret, conf_tenant, conf_url)
+
+	var arrObject [5]BatchObject
+
+	for i := 0; i < len(arrObject); i++ {
+		arrObject[i] = BatchObject{
+			object: map[string]any{
+				"firstname": "test",
+				"lastname":  fmt.Sprintf("fromgo_%v", i),
+			},
+			predicate: "POST",
+			table:     "contacts",
+		}
+	}
+
+	batchParams := BatchOperationSignature{
+		Auth:       auth,
+		Objects:    arrObject[:],
+		Printerror: true,
+	}
+
+	err := Batch(batchParams)
+	if err != nil {
+		t.Fatalf("%v", "Expected error!")
+	} else {
+		t.Logf("Success!")
+	}
 }

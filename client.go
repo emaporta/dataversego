@@ -359,7 +359,7 @@ func batch(auth Authorization, batchObject []BatchObject, printerror bool) (err 
 			return
 		}
 
-		content += fmt.Sprintf("%v\n", jsonStr)
+		content += fmt.Sprintf("%v\n", string(jsonStr))
 	}
 	content += fmt.Sprintf("--changeset_BBB00%v--\n\n", i)
 	content += fmt.Sprintf("--batch_AAA00%v--", i)
