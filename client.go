@@ -1,8 +1,10 @@
 package dataversego
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"strconv"
 	"strings"
@@ -26,7 +28,7 @@ var Version string = "0.1.0"
 //   - Url: a string representing the organization URL
 //   - Expiration: an int64 representing the expiration time of the token in Unix timestamp format
 //
-// Example: 
+// Example:
 //
 //	auth := Authenticate("clientid", "secret", "tenantid", "https://myorg.crm.dynamics.com")
 //	fmt.Println(auth.Token)
@@ -228,47 +230,23 @@ func Delete(parameter DeleteSignature) (err error) {
 	return
 }
 
-func makeLotRequests() {
-	start := time.Now()
-
-	ch := make(chan int)
-
-	orgUrl := "https://orgd29866b9.crm4.dynamics.com/"
-
-	auth := requests.GetAuthorization("a60f4f90-77f3-48e2-b031-2439a9d3ac95", "Ut~8Q~7JBXblqBbY43Ps1i3dn9yh2GxzReJiGbk-", "47ffa07d-0cf2-47a7-a12d-06165251037e", orgUrl)
-
-	access_token := auth["access_token"].(string)
-
-	fmt.Println(access_token)
-
-	batches := 100
-	batchSize := 100
-
-	for i := 1; i <= batches; i++ {
-		content := fmt.Sprintf("--batch_AAA00%v\n", i)
-		content += fmt.Sprintf("Content-Type: multipart/mixed;boundary=changeset_BBB00%v\n\n", i)
-		for j := 1; j <= batchSize; j++ {
-			content += fmt.Sprintf("--changeset_BBB00%v\n", i)
-			content += fmt.Sprintf("Content-Type: application/http\n")
-			content += fmt.Sprintf("Content-Transfer-Encoding:binary\n")
-			content += fmt.Sprintf("Content-ID: %v\n\n", j)
-			content += fmt.Sprintf("POST %vapi/data/v9.1/leads HTTP/1.1\n", orgUrl)
-			content += fmt.Sprintf("Content-Type: application/json\n\n")
-			content += fmt.Sprintf("{\"address1_country\": \"United States\",\"lastname\": \"User%v\",\"firstname\": \"Test\",\"fullname\": \"Test User%v\",\"companyname\": \"Test corp 1\"}\n", ((i-1)*batchSize + j), ((i-1)*batchSize + j))
-		}
-		content += fmt.Sprintf("--changeset_BBB00%v--\n\n", i)
-		content += fmt.Sprintf("--batch_AAA00%v--", i)
-
-		// fmt.Println(content)
-
-		go requests.PostBatch(orgUrl, access_token, content, fmt.Sprintf("batch_AAA00%v", i), ch)
+// Batch perform a batch operation.
+//
+// It takes a single argument of type 'BatchOperationSignature', which is a struct containing the following fields:
+//   - Auth: a struct containing authentication information
+//   - Objects: the array of batch objects representing the operation to perform
+//   - Printerror: a boolean value indicating whether or not to print errors
+//
+// The return value is an error value, which will be nil if the function completed successfully.
+func Batch(parameter BatchOperationSignature) (err error) {
+	if !parameter.Auth.isSet() {
+		err = errors.New("Empty auth")
+		return
 	}
 
-	for i := 1; i <= batches; i++ {
-		fmt.Println(<-ch)
-	}
+	err = batch(parameter.Auth, parameter.Objects, parameter.Printerror)
 
-	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+	return
 }
 
 // INTERNAL METHODS
@@ -354,3 +332,76 @@ func delete(auth Authorization, tableName string, id string, printerror bool) (e
 
 	return
 }
+
+func batch(auth Authorization, batchObject []BatchObject, printerror bool) (err error) {
+
+	chErr := make(chan error)
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+
+	i := r1.Intn(100)
+
+	content := fmt.Sprintf("--batch_AAA00%v\n", i)
+	content += fmt.Sprintf("Content-Type: multipart/mixed;boundary=changeset_BBB00%v\n\n", i)
+	for j := 0; j < len(batchObject); j++ {
+		content += fmt.Sprintf("--changeset_BBB00%v\n", i)
+		content += fmt.Sprintf("Content-Type: application/http\n")
+		content += fmt.Sprintf("Content-Transfer-Encoding:binary\n")
+		content += fmt.Sprintf("Content-ID: %v\n\n", j)
+		content += fmt.Sprintf("%v %vapi/data/v9.1/%v HTTP/1.1\n", batchObject[j].predicate, auth.Url, batchObject[j].table)
+		content += fmt.Sprintf("Content-Type: application/json\n\n")
+
+		// Marshal the `row` data into a JSON string.
+		jsonStr, errMarsh := json.Marshal(batchObject[j].object)
+		if errMarsh != nil {
+			err = errMarsh
+			return
+		}
+
+		content += fmt.Sprintf("%v\n", string(jsonStr))
+	}
+	content += fmt.Sprintf("--changeset_BBB00%v--\n\n", i)
+	content += fmt.Sprintf("--batch_AAA00%v--", i)
+
+	// fmt.Println(content)
+
+	go requests.PostBatch(auth.Url, auth.Token, content, fmt.Sprintf("batch_AAA00%v", i), printerror, chErr)
+
+	err = <-chErr
+	return
+}
+
+// TO-REMOVE
+
+// func makeLotRequests() {
+// 	start := time.Now()
+// 	ch := make(chan int)
+// 	orgUrl := "https://orgd29866b9.crm4.dynamics.com/"
+// 	auth := requests.GetAuthorization("a60f4f90-77f3-48e2-b031-2439a9d3ac95", "Ut~8Q~7JBXblqBbY43Ps1i3dn9yh2GxzReJiGbk-", "47ffa07d-0cf2-47a7-a12d-06165251037e", orgUrl)
+// 	access_token := auth["access_token"].(string)
+// 	fmt.Println(access_token)
+// 	batches := 100
+// 	batchSize := 100
+// 	for i := 1; i <= batches; i++ {
+// 		content := fmt.Sprintf("--batch_AAA00%v\n", i)
+// 		content += fmt.Sprintf("Content-Type: multipart/mixed;boundary=changeset_BBB00%v\n\n", i)
+// 		for j := 1; j <= batchSize; j++ {
+// 			content += fmt.Sprintf("--changeset_BBB00%v\n", i)
+// 			content += fmt.Sprintf("Content-Type: application/http\n")
+// 			content += fmt.Sprintf("Content-Transfer-Encoding:binary\n")
+// 			content += fmt.Sprintf("Content-ID: %v\n\n", j)
+// 			content += fmt.Sprintf("POST %vapi/data/v9.1/leads HTTP/1.1\n", orgUrl)
+// 			content += fmt.Sprintf("Content-Type: application/json\n\n")
+// 			content += fmt.Sprintf("{\"address1_country\": \"United States\",\"lastname\": \"User%v\",\"firstname\": \"Test\",\"fullname\": \"Test User%v\",\"companyname\": \"Test corp 1\"}\n", ((i-1)*batchSize + j), ((i-1)*batchSize + j))
+// 		}
+// 		content += fmt.Sprintf("--changeset_BBB00%v--\n\n", i)
+// 		content += fmt.Sprintf("--batch_AAA00%v--", i)
+// 		// fmt.Println(content)
+// 		go requests.PostBatch(orgUrl, access_token, content, fmt.Sprintf("batch_AAA00%v", i), ch)
+// 	}
+// 	for i := 1; i <= batches; i++ {
+// 		fmt.Println(<-ch)
+// 	}
+// 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+// }

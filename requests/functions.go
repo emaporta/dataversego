@@ -275,7 +275,7 @@ func DeleteRequest(url string, auth string, printerror bool, chErr chan<- error)
 	}
 }
 
-func PostBatch(url string, auth string, content string, boundary string, ch chan<- int) {
+func PostBatch(url string, auth string, content string, boundary string, printerror bool, chErr chan<- error) {
 
 	contentType := fmt.Sprintf("multipart/mixed;boundary=%v", boundary)
 	bearerToken := fmt.Sprintf("Bearer %v", auth)
@@ -299,14 +299,22 @@ func PostBatch(url string, auth string, content string, boundary string, ch chan
 		retrySecs, err := strconv.ParseInt(retrySecsStr, 10, 64)
 		if err != nil {
 			fmt.Printf("Error during conversion: %v", err)
-			ch <- resp.StatusCode
+			chErr <- err
 			return
 		}
 		time.Sleep(time.Second * time.Duration(retrySecs))
-		go PostBatch(url, auth, content, boundary, ch)
+		go PostBatch(url, auth, content, boundary, printerror, chErr)
 	}
 
-	ch <- resp.StatusCode
+	if resp.StatusCode > 300 {
+		if printerror {
+			fmt.Printf("Request url: %v", url)
+			fmt.Printf("Statuscode: %v - %v", resp.StatusCode, responseBody)
+		}
+		chErr <- errors.New(fmt.Sprintf("HTTP ERROR %v - MESSAGE: %v", resp.StatusCode, responseBody))
+	} else {
+		chErr <- nil
+	}
 }
 
 // checkFake checks if a given URL is a "fake" URL.

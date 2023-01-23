@@ -63,3 +63,14 @@ type DeleteSignature struct {
 	Id         string
 	Printerror bool
 }
+
+// The 'BatchOperationSignature' struct represents the signature of a 'Batch' function.
+// It contains the following fields:
+//   - Auth: a struct containing authentication information
+//   - Objects: an array of BatchObject that are the operations to be performed
+//   - Printerror: a boolean value indicating whether or not to print errors
+type BatchOperationSignature struct {
+	Auth       Authorization
+	Objects    []BatchObject
+	Printerror bool
+}
